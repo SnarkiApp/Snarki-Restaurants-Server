@@ -1,10 +1,13 @@
 const typeDefs = require("./schema");
 const {
+    loginUser,
     registerUser
 } = require("./resolver");
 
 const resolvers = {
-    Query: {},
+    Query: {
+        login: (_, args) => loginUser(args)
+    },
     Mutation: {
         register: (_, args) => registerUser(args)
     }

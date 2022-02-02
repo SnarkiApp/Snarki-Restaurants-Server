@@ -6,8 +6,17 @@ const typeDefs = gql`
         message: String!
     }
 
+    type loginType {
+        code: Int,
+        message: String!,
+        authToken: String
+    }
+
     type Query {
-        a: String
+        login(
+            email: String!
+            password: String!
+        ): loginType
     }
 
     type Mutation {
