@@ -8,8 +8,7 @@ const typeDefs = gql`
 
     type loginType {
         code: Int,
-        message: String!,
-        authToken: String
+        message: String!
     }
 
     type Query {

@@ -6,7 +6,7 @@ const {
 
 const resolvers = {
     Query: {
-        login: (_, args) => loginUser(args)
+        login: (_, args, {res}) => loginUser(args, res)
     },
     Mutation: {
         register: (_, args) => registerUser(args)

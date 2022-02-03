@@ -60,7 +60,7 @@ const registerUser = async data => {
     }
 };
 
-const loginUser = async data => {
+const loginUser = async (data, res) => {
     const {email, password} = data;
 
     if (!email || !password) {
@@ -107,10 +107,26 @@ const loginUser = async data => {
                 email,
                 userId: userDetails._id,
             }
-        }, constants.TOKEN_SECRET, { expiresIn: 60 * 60 });
+        }, constants.TOKEN_SECRET, { expiresIn: 60*15 });
+
+        const refreshToken = jwt.sign({
+            data: {
+                email,
+                userId: userDetails._id,
+            }
+        }, constants.REFRESH_TOKEN_SECRET, { expiresIn: 60*60*24*7 });
+
+        res.cookie('token', authToken, {
+            maxAge: 60*20,
+            httpOnly: true
+        });
+
+        res.cookie('refresh-token', refreshToken, {
+            maxAge: 60*60*24*7,
+            httpOnly: true
+        });
 
         return {
-            authToken,
             code: 200,
             message: "Authentication successfull",
         };
