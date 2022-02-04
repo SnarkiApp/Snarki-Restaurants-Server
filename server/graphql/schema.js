@@ -16,6 +16,13 @@ const typeDefs = gql`
             email: String!
             password: String!
         ): loginType
+
+        contact(
+            email: String!
+            firstName: String
+            lastName: String
+            comments: String!
+        ): Status
     }
 
     type Mutation {
