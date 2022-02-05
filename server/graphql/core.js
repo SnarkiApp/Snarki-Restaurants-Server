@@ -1,5 +1,6 @@
 const typeDefs = require("./schema");
 const {
+    me,
     loginUser,
     registerUser,
     contactSnarki
@@ -7,8 +8,9 @@ const {
 
 const resolvers = {
     Query: {
+        contact: (_, args) => contactSnarki(args),
         login: (_, args, {res}) => loginUser(args, res),
-        contact: (_, args) => contactSnarki(args)
+        me: (_, args, {user}) => me(user)
     },
     Mutation: {
         register: (_, args) => registerUser(args)

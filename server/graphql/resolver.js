@@ -108,31 +108,19 @@ const loginUser = async (data, res) => {
                 email,
                 userId: userDetails._id,
             }
-        }, constants.TOKEN_SECRET, { expiresIn: 60*15 });
+        }, constants.TOKEN_SECRET, { expiresIn: 60*60*24 });
 
-        const refreshToken = jwt.sign({
-            data: {
-                email,
-                userId: userDetails._id,
-            }
-        }, constants.REFRESH_TOKEN_SECRET, { expiresIn: 60*60*24*7 });
-
-        res.cookie('token', authToken, {
-            maxAge: 60*15,
-            httpOnly: true
-        });
-
-        res.cookie('refresh-token', refreshToken, {
-            maxAge: 60*60*24*7,
-            httpOnly: true
-        });
+        delete userDetails.password;
 
         return {
             code: 200,
+            token: authToken,
+            meData: {...userDetails},
             message: "Authentication successfull",
         };
 
     } catch(err) {
+        console.log(err);
         return {
             code: 500,
             message: "Something went wrong!",
@@ -186,7 +174,41 @@ const contactSnarki = async (data) => {
     }
 };
 
+const me = async user => {
+    if (!user) {
+        return {
+            code: 401,
+            message: "Unauthorised"
+        }
+    }
+
+    try {
+        const userDetails = await findUser({email: user.email});
+        if (!userDetails) {
+            return {
+                code: 400,
+                message: "User not found!"
+            };
+        }
+
+        delete userDetails.password;
+
+        return {
+            code: 200,
+            meData: {...userDetails},
+            message: "User details fetched successfully",
+        };
+
+    } catch(err) {
+        return {
+            code: 500,
+            message: "Something went wrong!",
+        };
+    }
+};
+
 module.exports = {
+    me,
     loginUser,
     registerUser,
     contactSnarki

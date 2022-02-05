@@ -1,21 +1,47 @@
-const cors = require("cors");
-const {ApolloServer} = require('apollo-server');
+const express = require('express');
+const jwt = require('jsonwebtoken');
+const {ApolloServer} = require('apollo-server-express');
 const {apolloData} = require("./graphql/core");
 const {connectToMongoServer} = require('./utils/mongo');
+const cookieParser = require("cookie-parser");
+const bodyParser = require('body-parser');
+const constants = require("./utils/constants");
+
+const app = express();
+const corsOptions = {
+    origin: 'http://localhost:3000',
+    credentials: true
+}
+app.use(bodyParser.json());
+app.use(cookieParser());
 
 connectToMongoServer()
-    .then(() => {
+    .then(async () => {
         const server = new ApolloServer({
             ...apolloData,
-            cors: {
-                origin: 'http://localhost:3000',
-                credentials: true
-            },
-            context: ({req, res}) => ({req, res})
+            context: async ({ req, res }) => {
+                const token = req.headers.authorization || "";
+
+                let user = null;
+                if (token) {
+                    try {
+                        const { data: tokenData } = await jwt.verify(token, constants.TOKEN_SECRET);
+                        user = tokenData;
+                    } catch(err) {
+                        console.log(err);
+                    }
+                }
+             
+                return { req, res, user };
+              },
         });
-        server.listen().then(({ url }) => {
-            console.log(`Server ready at ${url}`);
-        });
+
+        await server.start();
+        server.applyMiddleware({ app, cors: corsOptions });
+
+        app.listen({ port: 4000 }, () =>
+            console.log(`Server ready at port 4000`) 
+        );
     }).catch(err => {
         throw new Error(err)
     });
