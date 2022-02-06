@@ -42,6 +42,7 @@ const typeDefs = gql`
     type Mutation {
         register(
             email: String!,
+            role: String!,
             password: String!
         ): Status
     }

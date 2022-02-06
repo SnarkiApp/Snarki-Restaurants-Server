@@ -9,13 +9,20 @@ const constants = require("../utils/constants");
 const { sendEmail } = require("../utils/sendEmail");
 
 const registerUser = async data => {
-    const {email, password} = data;
+    const {email, password, role} = data;
 
-    if (!email || !password) {
+    if (!email || !password || !role) {
         return {
             code: 400,
             message: "missing arguments"
         }
+    }
+
+    if (role != "restaurant") {
+        return {
+            code: 401,
+            message: "Invalid Role"
+        };
     }
 
     const emailValidation = constants.emailRegex.test(email);
@@ -44,8 +51,10 @@ const registerUser = async data => {
         }
 
         await addUser({
+            role,
             email: email.toLowerCase(),
-            password: securePassword
+            password: securePassword,
+            verified: false
         });
 
         return {
