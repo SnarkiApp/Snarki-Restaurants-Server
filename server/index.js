@@ -26,6 +26,8 @@ connectToMongoServer()
                 if (token) {
                     try {
                         const { data: tokenData } = await jwt.verify(token, constants.TOKEN_SECRET);
+
+                        // TODO: Search for user in DB
                         user = tokenData;
                     } catch(err) {
                         console.log(err);

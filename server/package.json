@@ -12,14 +12,17 @@
   "dependencies": {
     "@sendgrid/mail": "^7.6.0",
     "apollo-server-express": "^3.6.2",
+    "aws-sdk": "^2.1073.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.1",
     "cookie-parser": "^1.4.6",
+    "dotenv": "^16.0.0",
     "express": "^4.17.2",
     "graphql": "^16.3.0",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.21",
     "mongodb": "^4.3.1",
-    "nodemon": "^2.0.15"
+    "nodemon": "^2.0.15",
+    "uuid": "^8.3.2"
   }
 }

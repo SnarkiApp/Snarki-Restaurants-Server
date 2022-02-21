@@ -2,11 +2,15 @@ const _ = require("lodash");
 const jwt = require('jsonwebtoken');
 const {
     findUser,
-    addUser
+    addUser,
+    getRestaurants,
+    findVerificationRecords,
+    addDocumentsVerification
 } = require("../data/data");
 const {hashPassword, comparePassword} = require("../utils/bcrypt");
 const constants = require("../utils/constants");
 const { sendEmail } = require("../utils/sendEmail");
+const { putPresignedUrl } = require("../utils/aws/preSignedUrl");
 
 const registerUser = async data => {
     const {email, password, role} = data;
@@ -18,7 +22,7 @@ const registerUser = async data => {
         }
     }
 
-    if (role != "restaurant") {
+    if (role != "RESTAURANT") {
         return {
             code: 401,
             message: "Invalid Role"
@@ -129,7 +133,6 @@ const loginUser = async (data, res) => {
         };
 
     } catch(err) {
-        console.log(err);
         return {
             code: 500,
             message: "Something went wrong!",
@@ -216,9 +219,136 @@ const me = async user => {
     }
 };
 
+const getRestaurantsList = async (args, user) => {
+    if (!user) {
+        return {
+            code: 401,
+            message: "Unauthorised"
+        }
+    }
+
+    try {
+        const restaurants = await getRestaurants({searchText: args.name});
+        return {
+            code: 200,
+            restaurants,
+            message: "Restaurants fetched successfully",
+        };
+
+    } catch(err) {
+        return {
+            code: 500,
+            message: "Something went wrong!",
+        };
+    }
+};
+
+const postUploadUrl = async (args, user) => {
+    if (!user) {
+        return {
+            code: 401,
+            message: "Unauthorised"
+        }
+    }
+
+    if (!args.count) {
+        return {
+            code: 400,
+            message: "missing arguments"
+        }
+    }
+
+    try {
+        const documents = await findVerificationRecords({
+            restaurantId: args._id
+        });
+        console.log(documents);
+
+        if(documents) {
+            return {
+                code: 409,
+                message: "Records verification in progress",
+            };
+        }
+    } catch(err) {
+        throw new Error(err);
+    }
+
+    try {
+        let urls = [];
+        for(let i=0; i<args.count; i++) {
+            urls.push(putPresignedUrl());
+        }
+
+        return {
+            urls,
+            code: 200,
+            message: 'Upload Url fetched successfully'
+        }
+
+    } catch(err) {
+        return {
+            code: 500,
+            message: "Something went wrong!"
+        }
+    }
+}
+
+const addDocuments = async (args, user) => {
+    if (!user) {
+        return {
+            code: 401,
+            message: "Unauthorised"
+        }
+    }
+
+    if (!args._id || !args.documents.length) {
+        return {
+            code: 400,
+            message: "missing arguments"
+        }
+    }
+
+    try {
+        const documents = await findVerificationRecords({
+            restaurantId: args._id
+        });
+
+        if(documents) {
+            return {
+                code: 409,
+                message: "Records verification in progress",
+            };
+        }
+    } catch(err) {
+        throw new Error(err);
+    }
+
+    try {
+        await addDocumentsVerification({
+            restaurantId: args._id,
+            documents: args.documents
+        });
+        return {
+            code: 200,
+            message: "Restaurants documents recorded",
+        };
+
+    } catch(err) {
+        return {
+            code: 500,
+            message: "Something went wrong!",
+        };
+    }
+};
+
 module.exports = {
     me,
     loginUser,
     registerUser,
-    contactSnarki
+    addDocuments,
+    contactSnarki,
+    postUploadUrl,
+    putPresignedUrl,
+    getRestaurantsList
 }
