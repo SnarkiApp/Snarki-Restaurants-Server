@@ -4,8 +4,10 @@ const {
     findUser,
     addUser,
     getRestaurants,
+    findRestaurant,
     findVerificationRecords,
-    addDocumentsVerification
+    addDocumentsVerification,
+    registerRestaurantVerification
 } = require("../data/data");
 const {hashPassword, comparePassword} = require("../utils/bcrypt");
 const constants = require("../utils/constants");
@@ -228,7 +230,7 @@ const getRestaurantsList = async (args, user) => {
     }
 
     try {
-        const restaurants = await getRestaurants({searchText: args.name});
+        const restaurants = await getRestaurants({searchText: args.name.toLowerCase()});
         return {
             code: 200,
             restaurants,
@@ -258,26 +260,29 @@ const postUploadUrl = async (args, user) => {
         }
     }
 
-    try {
-        const documents = await findVerificationRecords({
-            restaurantId: args._id
-        });
-        console.log(documents);
+    if (args._id && args.category === "claim") {
+        try {
+            const documents = await findVerificationRecords({
+                restaurantId: args._id
+            });
 
-        if(documents) {
-            return {
-                code: 409,
-                message: "Records verification in progress",
-            };
+            if(documents) {
+                return {
+                    code: 409,
+                    message: "Records verification in progress",
+                };
+            }
+        } catch(err) {
+            throw new Error(err);
         }
-    } catch(err) {
-        throw new Error(err);
     }
 
     try {
         let urls = [];
         for(let i=0; i<args.count; i++) {
-            urls.push(putPresignedUrl());
+            urls.push(putPresignedUrl({
+                category: args.category
+            }));
         }
 
         return {
@@ -294,7 +299,7 @@ const postUploadUrl = async (args, user) => {
     }
 }
 
-const addDocuments = async (args, user) => {
+const addClaimDocuments = async (args, user) => {
     if (!user) {
         return {
             code: 401,
@@ -311,7 +316,7 @@ const addDocuments = async (args, user) => {
 
     try {
         const documents = await findVerificationRecords({
-            restaurantId: args._id
+            _id: args._id
         });
 
         if(documents) {
@@ -342,13 +347,62 @@ const addDocuments = async (args, user) => {
     }
 };
 
+const registerRestaurants = async (args, user) => {
+    if (!user) {
+        return {
+            code: 401,
+            message: "Unauthorised"
+        }
+    }
+
+    const input = args.input;
+
+    try {
+        const documents = await findRestaurant({
+            name: input.name.toLowerCase(),
+            postalCode: input.postalCode
+        });
+
+        if(documents) {
+            return {
+                code: 409,
+                message: "Restaurant already registered.",
+            };
+        }
+    } catch(err) {
+        throw new Error(err);
+    }
+
+    try {
+        const response = await registerRestaurantVerification({
+            ...input,
+            name: input.name.toLowerCase(),
+            state: input.state.toLowerCase(),
+            address: input.address.toLowerCase(),
+            city: input.city.toLowerCase()
+        });
+        return {
+            code: 200,
+            _id: response.insertedId.toString(),
+            message: "Restaurants details recorded",
+        };
+
+    } catch(err) {
+        return {
+            code: 500,
+            message: "Something went wrong!",
+        };
+    }
+}
+
 module.exports = {
     me,
     loginUser,
     registerUser,
-    addDocuments,
+    addClaimDocuments,
     contactSnarki,
     postUploadUrl,
     putPresignedUrl,
-    getRestaurantsList
+    getRestaurantsList,
+    registerRestaurants
 }

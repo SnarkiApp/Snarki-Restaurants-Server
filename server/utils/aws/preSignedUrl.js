@@ -15,15 +15,23 @@ let s3 = new AWS.S3({signatureVersion: 'v4'});
 //     Expires: 100 //time to expire in seconds
 // });
 
-const putPresignedUrl = async () => {
+const putPresignedUrl = async ({category = "newRestaurants"}) => {
+    let conditionMatch = "eq";
+    let defaultType = "application/pdf";
+
+    if (category === "images") {
+        conditionMatch = "starts-with",
+        defaultType = "image/"
+    }
+
     const params = {
         Bucket: process.env.S3_BUCKET,
         Conditions: [
-            ['content-length-range', '0', '1000000'],
-            ["eq", "$Content-Type", "application/pdf"]
+            ['content-length-range', '0', '500000'],
+            [conditionMatch, "$Content-Type", defaultType]
         ],
         Fields: {
-            key: uuidv4(), 
+            key: `${category}/${uuidv4()}`,
         },
         Expires: 60*5
     };

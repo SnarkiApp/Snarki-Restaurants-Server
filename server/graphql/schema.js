@@ -59,6 +59,31 @@ const typeDefs = gql`
         urls: [String!]
     }
 
+    type RegisterRestaurantsStatus {
+        code: Int!
+        message: String!
+        _id: ID
+    }
+
+    input LocationInput {
+        type: String,
+        coordinates: [Float!]!
+    }
+
+    input RestaurantInput {
+        name: String!
+        address: String!
+        city: String!
+        state: String!
+        postalCode: String!
+        contact: String!
+        hours: String!
+        cuisines: [String!]!
+        location: LocationInput!
+        documents: [String!]!
+        images: [String!]!
+    }
+
     type Query {
         login(
             email: String!
@@ -79,8 +104,9 @@ const typeDefs = gql`
         ): RestaurantResult
 
         postUploadUrl(
-            _id: String!
+            _id: String
             count: Int!
+            category: String!
         ): PostUploadUrlType
     }
 
@@ -91,10 +117,14 @@ const typeDefs = gql`
             password: String!
         ): Status
 
-        addDocuments(
+        addClaimDocuments(
             _id: String!
             documents: [String!]!
         ): Status
+
+        registerRestaurants(
+            input: RestaurantInput!
+        ): RegisterRestaurantsStatus
     }
 `;
 

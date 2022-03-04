@@ -3,10 +3,11 @@ const {
     me,
     loginUser,
     registerUser,
-    addDocuments,
+    addClaimDocuments,
     contactSnarki,
     postUploadUrl,
     getRestaurantsList,
+    registerRestaurants
 } = require("./resolver");
 
 const resolvers = {
@@ -19,7 +20,8 @@ const resolvers = {
     },
     Mutation: {
         register: (_, args) => registerUser(args),
-        addDocuments: (_, args, {user}) => addDocuments(args, user)
+        addClaimDocuments: (_, args, {user}) => addClaimDocuments(args, user),
+        registerRestaurants: (_, args, {user}) => registerRestaurants(args, user)
     }
 };
 

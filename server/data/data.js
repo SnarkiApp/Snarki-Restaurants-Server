@@ -15,12 +15,13 @@ const getRestaurants = async ({searchText}) => {
         .toArray();
 }
 
-const findVerificationRecords = async ({restaurantId}) => {
-    return await getDb().collection("restaurant_verification").findOne({_id: restaurantId});
+const findVerificationRecords = async (filters) => {
+    return await getDb().collection("claim_restaurant_verification")
+        .findOne(filters);
 }
 
 const addDocumentsVerification = async ({restaurantId, documents}) => {
-    return await getDb().collection("restaurant_verification")
+    return await getDb().collection("claim_restaurant_verification")
         .insertOne({
             _id: restaurantId,
             documents
@@ -38,11 +39,23 @@ const addRestaurantDocuments = async ({restaurantId, documents}) => {
         });
 }
 
+const findRestaurant = async (filters) => {
+    return await getDb().collection("register_restaurant_verification")
+        .findOne(filters);
+}
+
+const registerRestaurantVerification = async (restaurant) => {
+    return await getDb().collection("register_restaurant_verification")
+        .insertOne(restaurant);
+}
+
 module.exports = {
     addUser,
     findUser,
     getRestaurants,
+    findRestaurant,
     findVerificationRecords,
     addRestaurantDocuments,
-    addDocumentsVerification
+    addDocumentsVerification,
+    registerRestaurantVerification
 };
