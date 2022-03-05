@@ -76,7 +76,7 @@ const registerUser = async data => {
     }
 };
 
-const loginUser = async (data, res) => {
+const loginUser = async (data) => {
     const {email, password} = data;
 
     if (!email || !password) {

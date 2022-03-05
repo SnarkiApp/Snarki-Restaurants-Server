@@ -15,6 +15,10 @@ const corsOptions = {
 app.use(bodyParser.json());
 app.use(cookieParser());
 
+app.get("/", (req, res) => {
+    res.send("Snarki pong!!");
+});
+
 const startServer = async () => {
     const server = new ApolloServer({
         ...apolloData,
