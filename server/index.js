@@ -15,35 +15,38 @@ const corsOptions = {
 app.use(bodyParser.json());
 app.use(cookieParser());
 
-connectToMongoServer()
-    .then(async () => {
-        const server = new ApolloServer({
-            ...apolloData,
-            context: async ({ req, res }) => {
-                const token = req.headers.authorization || "";
+const startServer = async () => {
+    const server = new ApolloServer({
+        ...apolloData,
+        context: async ({ req, res }) => {
+            const token = req.headers.authorization || "";
 
-                let user = null;
-                if (token) {
-                    try {
-                        const { data: tokenData } = await jwt.verify(token, constants.TOKEN_SECRET);
+            let user = null;
+            if (token) {
+                try {
+                    const { data: tokenData } = await jwt.verify(token, constants.TOKEN_SECRET);
 
-                        // TODO: Search for user in DB
-                        user = tokenData;
-                    } catch(err) {
-                        console.log(err);
-                    }
+                    // TODO: Search for user in DB
+                    user = tokenData;
+                } catch(err) {
+                    console.log(err);
                 }
-             
-                return { req, res, user };
-              },
-        });
+            }
+         
+            return { req, res, user };
+          },
+    });
 
-        await server.start();
-        server.applyMiddleware({ app, cors: corsOptions });
+    await server.start();
+    server.applyMiddleware({ app, cors: corsOptions });
 
-        app.listen({ port: 4000 }, () =>
-            console.log(`Server ready at port 4000`) 
-        );
-    }).catch(err => {
+    app.listen({ port: 4000 }, () =>
+        console.log(`Server ready at port 4000`) 
+    );
+}
+
+connectToMongoServer()
+    .then(async () => await startServer())
+    .catch(err => {
         throw new Error(err)
     });

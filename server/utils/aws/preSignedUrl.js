@@ -1,12 +1,7 @@
-require('dotenv').config();
-let AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
+const { getAwsInstance } = require('../aws/aws');
 
-let credentials = {
-    accessKeyId: process.env.S3_ACCESS_KEY,
-    secretAccessKey : process.env.S3_SECRET_KEY
-};
-AWS.config.update({credentials: credentials, region: process.env.S3_REGION});
+const AWS = getAwsInstance('S3');
 let s3 = new AWS.S3({signatureVersion: 'v4'});
 
 // let getPresignedUrl = s3.getSignedUrl('getObject', {

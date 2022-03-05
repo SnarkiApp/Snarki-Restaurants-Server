@@ -1,10 +1,11 @@
 const { MongoClient } = require('mongodb');
-const url = 'mongodb://127.0.0.1:27017';
+const { fetchSSMSecrets } = require('./aws/ssmSecrets');
+const ssmKeys = require('./aws/ssmKeys');
 
 let db;
-const client = new MongoClient(url);
-
 async function connectToMongoServer() {
+  const url = await fetchSSMSecrets(ssmKeys.mongoUrl);
+  const client = new MongoClient(url);
   await client.connect();
   db = client.db('Snarki');
   console.log("Connected to Snarki db");

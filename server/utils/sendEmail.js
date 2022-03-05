@@ -1,7 +1,8 @@
 const client = require("@sendgrid/mail");
 const constants = require("../utils/constants");
+const ssmKeys = require('./aws/ssmKeys');
+const { fetchSSMSecrets } = require('./aws/ssmSecrets');
 
-client.setApiKey(constants.sendgrid_api_key);
 
 const sendEmail = async ({
     to = "",
@@ -9,6 +10,9 @@ const sendEmail = async ({
 }) => {
 
     if (!to) throw new Error("Missing Email Arguments");
+    
+    const apiKey = await fetchSSMSecrets(ssmKeys.sendGridApiKey);
+    client.setApiKey(apiKey);
 
     try {
         await client.send({
