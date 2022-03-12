@@ -2,7 +2,10 @@ const { v4: uuidv4 } = require('uuid');
 const { getAwsInstance } = require('../aws/aws');
 
 const AWS = getAwsInstance('S3');
-let s3 = new AWS.S3({signatureVersion: 'v4'});
+let s3 = new AWS.S3({
+    region: 'us-east-1',
+    signatureVersion: 'v4'
+});
 
 // let getPresignedUrl = s3.getSignedUrl('getObject', {
 //     Bucket: process.env.S3_BUCKET,
