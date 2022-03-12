@@ -240,6 +240,7 @@ const getRestaurantsList = async (args, user) => {
     } catch(err) {
         return {
             code: 500,
+            restaurants: [],
             message: "Something went wrong!",
         };
     }
@@ -278,7 +279,6 @@ const postUploadUrl = async (args, user) => {
     }
 
     try {
-        let urls = [];
         let urlsPromiseList = [];
         for(let i=0; i<args.count; i++) {
             urlsPromiseList.push(putPresignedUrl({
@@ -289,8 +289,8 @@ const postUploadUrl = async (args, user) => {
         const urlsResult = await Promise.all(urlsPromiseList);
 
         return {
-            urls: urlsResult,
             code: 200,
+            urls: urlsResult,
             message: 'Upload Url fetched successfully'
         }
 

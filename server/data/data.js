@@ -11,7 +11,16 @@ const addUser = async args => {
 
 const getRestaurants = async ({searchText}) => {
     return await getDb().collection("restaurants")
-        .find({"name": {"$regex": `^${searchText}`}})
+        .aggregate([
+            {
+                $search: {
+                    'text': {
+                        'query': searchText,
+                        'path': "name",
+                    },
+                },
+            },
+        ]).sort({score: {$meta: 'textScore'}})
         .toArray();
 }
 

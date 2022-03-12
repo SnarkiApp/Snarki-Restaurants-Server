@@ -50,7 +50,7 @@ const typeDefs = gql`
     type RestaurantResult {
         code: Int!
         message: String!
-        restaurants: [Restaurant!]
+        restaurants: [Restaurant]
     }
 
     type PostUploadUrlType {
