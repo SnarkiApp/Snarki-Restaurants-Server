@@ -279,14 +279,17 @@ const postUploadUrl = async (args, user) => {
 
     try {
         let urls = [];
+        let urlsPromiseList = [];
         for(let i=0; i<args.count; i++) {
-            urls.push(putPresignedUrl({
+            urlsPromiseList.push(putPresignedUrl({
                 category: args.category
             }));
         }
 
+        const urlsResult = await Promise.all(urlsPromiseList);
+
         return {
-            urls,
+            urls: urlsResult,
             code: 200,
             message: 'Upload Url fetched successfully'
         }

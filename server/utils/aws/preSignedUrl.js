@@ -25,7 +25,7 @@ const putPresignedUrl = async ({category = "newRestaurants"}) => {
     const params = {
         Bucket: 'snarki-verification-documents',
         Conditions: [
-            ['content-length-range', '0', '500000'],
+            ['content-length-range', '100', '500000'],
             [conditionMatch, "$Content-Type", defaultType]
         ],
         Fields: {
@@ -34,8 +34,17 @@ const putPresignedUrl = async ({category = "newRestaurants"}) => {
         Expires: 60*5
     };
     try {
-        const response = await s3.createPresignedPost(params);
-        return JSON.stringify(response);
+        // const response = await s3.createPresignedPost(params);
+        // return JSON.stringify(response);
+        return new Promise(async (resolve, reject) => {
+            s3.createPresignedPost(params, (err, data) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+              resolve(JSON.stringify(data));
+            });
+        });
     } catch(err) {
         throw new Error(err);
     }
