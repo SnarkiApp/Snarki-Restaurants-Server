@@ -20,6 +20,7 @@ const getRestaurants = async ({searchText}) => {
                     },
                 },
             },
+            { $match : { claimed : false } },
         ]).sort({score: {$meta: 'textScore'}})
         .toArray();
 }
