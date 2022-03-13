@@ -25,7 +25,7 @@ const putPresignedUrl = async ({category = "newRestaurants"}) => {
     const params = {
         Bucket: 'snarki-verification-documents',
         Conditions: [
-            ['content-length-range', '100', '500000'],
+            ['content-length-range', '100', '5000000'],
             [conditionMatch, "$Content-Type", defaultType]
         ],
         Fields: {
