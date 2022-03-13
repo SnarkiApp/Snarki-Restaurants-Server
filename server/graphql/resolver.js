@@ -230,7 +230,9 @@ const getRestaurantsList = async (args, user) => {
     }
 
     try {
-        const restaurants = await getRestaurants({searchText: args.name.toLowerCase()});
+        const restaurants = await getRestaurants({
+            searchText: args.name.toLowerCase()
+        });
         return {
             code: 200,
             restaurants,
@@ -264,7 +266,7 @@ const postUploadUrl = async (args, user) => {
     if (args._id && args.category === "claim") {
         try {
             const documents = await findVerificationRecords({
-                restaurantId: args._id
+                _id: args._id
             });
 
             if(documents) {
