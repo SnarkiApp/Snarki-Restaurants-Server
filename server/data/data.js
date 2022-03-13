@@ -30,11 +30,12 @@ const findVerificationRecords = async (filters) => {
         .findOne(filters);
 }
 
-const addDocumentsVerification = async ({restaurantId, documents}) => {
+const addDocumentsVerification = async ({userId, restaurantId, documents}) => {
     return await getDb().collection("claim_restaurant_verification")
         .insertOne({
-            _id: restaurantId,
-            documents
+            userId,
+            documents,
+            _id: restaurantId
         });
 }
 

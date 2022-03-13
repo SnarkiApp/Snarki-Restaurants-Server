@@ -321,7 +321,8 @@ const addClaimDocuments = async (args, user) => {
 
     try {
         const documents = await findVerificationRecords({
-            _id: args._id
+            _id: args._id,
+            userId: user.userId
         });
 
         if(documents) {
@@ -336,6 +337,7 @@ const addClaimDocuments = async (args, user) => {
 
     try {
         await addDocumentsVerification({
+            userId: user.userId,
             restaurantId: args._id,
             documents: args.documents
         });
