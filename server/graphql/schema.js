@@ -78,7 +78,7 @@ const typeDefs = gql`
         postalCode: String!
         contact: String!
         hours: String!
-        cuisines: [String!]!
+        cuisines: String!
         location: LocationInput!
         documents: [String!]!
         images: [String!]!

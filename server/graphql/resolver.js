@@ -367,7 +367,8 @@ const registerRestaurants = async (args, user) => {
     try {
         const documents = await findRestaurant({
             name: input.name.toLowerCase(),
-            postalCode: input.postalCode
+            postalCode: input.postalCode,
+            userId: user.userId
         });
 
         if(documents) {
@@ -383,10 +384,14 @@ const registerRestaurants = async (args, user) => {
     try {
         const response = await registerRestaurantVerification({
             ...input,
+            userId: user.userId,
             name: input.name.toLowerCase(),
             state: input.state.toLowerCase(),
             address: input.address.toLowerCase(),
-            city: input.city.toLowerCase()
+            city: input.city.toLowerCase(),
+            cuisines: input.cuisines.split(",")
+                .filter((cuisine) => cuisine.trim().length > 0)
+                .map((cuisine) => cuisine.trim())
         });
         return {
             code: 200,
