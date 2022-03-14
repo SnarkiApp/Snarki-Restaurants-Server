@@ -266,7 +266,8 @@ const postUploadUrl = async (args, user) => {
     if (args._id && args.category === "claim") {
         try {
             const documents = await findVerificationRecords({
-                _id: args._id
+                restaurantId: args._id,
+                userId: user.userId
             });
 
             if(documents) {
@@ -321,7 +322,7 @@ const addClaimDocuments = async (args, user) => {
 
     try {
         const documents = await findVerificationRecords({
-            _id: args._id,
+            restaurantId: args._id,
             userId: user.userId
         });
 
@@ -339,7 +340,8 @@ const addClaimDocuments = async (args, user) => {
         await addDocumentsVerification({
             userId: user.userId,
             restaurantId: args._id,
-            documents: args.documents
+            documents: args.documents,
+            status: "unclaimed"
         });
         return {
             code: 200,
@@ -384,6 +386,7 @@ const registerRestaurants = async (args, user) => {
     try {
         const response = await registerRestaurantVerification({
             ...input,
+            status: "unregistered",
             userId: user.userId,
             name: input.name.toLowerCase(),
             state: input.state.toLowerCase(),
