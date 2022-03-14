@@ -1,4 +1,5 @@
 const _ = require("lodash");
+const {ObjectId} = require('mongodb');
 const jwt = require('jsonwebtoken');
 const {
     findUser,
@@ -7,7 +8,9 @@ const {
     findRestaurant,
     findVerificationRecords,
     addDocumentsVerification,
-    registerRestaurantVerification
+    findClaimRestaurantRequests,
+    registerRestaurantVerification,
+    findRegisterRestaurantRequests
 } = require("../data/data");
 const {hashPassword, comparePassword} = require("../utils/bcrypt");
 const constants = require("../utils/constants");
@@ -266,8 +269,8 @@ const postUploadUrl = async (args, user) => {
     if (args._id && args.category === "claim") {
         try {
             const documents = await findVerificationRecords({
-                restaurantId: args._id,
-                userId: user.userId
+                restaurantId: ObjectId(args._id),
+                userId: ObjectId(user.userId)
             });
 
             if(documents) {
@@ -322,8 +325,8 @@ const addClaimDocuments = async (args, user) => {
 
     try {
         const documents = await findVerificationRecords({
-            restaurantId: args._id,
-            userId: user.userId
+            restaurantId: ObjectId(args._id),
+            userId: ObjectId(user.userId)
         });
 
         if(documents) {
@@ -338,8 +341,8 @@ const addClaimDocuments = async (args, user) => {
 
     try {
         await addDocumentsVerification({
-            userId: user.userId,
-            restaurantId: args._id,
+            userId: ObjectId(user.userId),
+            restaurantId: ObjectId(args._id),
             documents: args.documents,
             status: "unclaimed"
         });
@@ -347,7 +350,6 @@ const addClaimDocuments = async (args, user) => {
             code: 200,
             message: "Restaurants documents recorded",
         };
-
     } catch(err) {
         return {
             code: 500,
@@ -370,7 +372,7 @@ const registerRestaurants = async (args, user) => {
         const documents = await findRestaurant({
             name: input.name.toLowerCase(),
             postalCode: input.postalCode,
-            userId: user.userId
+            userId: ObjectId(user.userId)
         });
 
         if(documents) {
@@ -387,7 +389,7 @@ const registerRestaurants = async (args, user) => {
         const response = await registerRestaurantVerification({
             ...input,
             status: "unregistered",
-            userId: user.userId,
+            userId: ObjectId(user.userId),
             name: input.name.toLowerCase(),
             state: input.state.toLowerCase(),
             address: input.address.toLowerCase(),
@@ -410,6 +412,64 @@ const registerRestaurants = async (args, user) => {
     }
 }
 
+const restaurantRequests = async (args, user) => {
+    if (!user) {
+        return {
+            code: 401,
+            message: "Unauthorised"
+        }
+    }
+
+    try {
+        const claimRestaurantRequests = await findClaimRestaurantRequests({userId: ObjectId(user.userId)});
+        const registerRestaurantRequests = await findRegisterRestaurantRequests({userId: ObjectId(user.userId)});
+
+        let requestsData = [];
+        let claimData = [];
+        let registerData = [];
+
+        if (claimRestaurantRequests.length) {
+            claimData = claimRestaurantRequests.map((item) => ({
+                type: "Claim",
+                status: item.status,
+                name: item.restaurant[0].name,
+                address: item.restaurant[0].address,
+                city: item.restaurant[0].city,
+                state: item.restaurant[0].state,
+                postalCode: item.restaurant[0].postalCode,
+            }));
+        }
+
+        if (registerRestaurantRequests.length) {
+            registerData = registerRestaurantRequests.map((item) => ({
+                type: "Register",
+                status: item.status,
+                name: item.name,
+                address: item.address,
+                city: item.city,
+                state: item.state,
+                postalCode: item.postalCode,
+            }));
+        }
+        requestsData = [
+            ...claimData,
+            ...registerData
+        ];
+
+        return {
+            code: 200,
+            restaurants: requestsData,
+            message: "Requests fetched successfully",
+        };
+
+    } catch(err) {
+        return {
+            code: 500,
+            message: "Something went wrong!",
+        };
+    }
+};
+
 module.exports = {
     me,
     loginUser,
@@ -419,5 +479,6 @@ module.exports = {
     postUploadUrl,
     putPresignedUrl,
     getRestaurantsList,
-    registerRestaurants
+    registerRestaurants,
+    restaurantRequests
 }

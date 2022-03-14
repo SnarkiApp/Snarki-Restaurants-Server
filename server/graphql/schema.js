@@ -84,6 +84,22 @@ const typeDefs = gql`
         images: [String!]!
     }
 
+    type RestaurantRequest {
+        name: String!
+        address: String!
+        city: String!
+        state: String!
+        postalCode: String!
+        status: String!
+        type: String!
+    }
+
+    type RestaurantRequestsType {
+        code: Int!
+        message: String!
+        restaurants: [RestaurantRequest!]
+    }
+
     type Query {
         login(
             email: String!
@@ -108,6 +124,8 @@ const typeDefs = gql`
             count: Int!
             category: String!
         ): PostUploadUrlType
+
+        restaurantRequests: RestaurantRequestsType
     }
 
     type Mutation {

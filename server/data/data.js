@@ -56,6 +56,27 @@ const registerRestaurantVerification = async (restaurant) => {
         .insertOne(restaurant);
 }
 
+const findClaimRestaurantRequests = async ({userId}) => {
+    return await getDb().collection("claim_restaurant_verification")
+        .aggregate([
+            { $match : { userId } },
+            {
+                $lookup: {
+                    from: "restaurants",
+                    localField: "restaurantId",
+                    foreignField: "_id",
+                    as: "restaurant"
+                }
+            }
+        ]).toArray();
+}
+
+const findRegisterRestaurantRequests = async ({userId}) => {
+    return await getDb().collection("register_restaurant_verification")
+        .find({userId})
+        .toArray();
+}
+
 module.exports = {
     addUser,
     findUser,
@@ -64,5 +85,7 @@ module.exports = {
     findVerificationRecords,
     addRestaurantDocuments,
     addDocumentsVerification,
-    registerRestaurantVerification
+    registerRestaurantVerification,
+    findClaimRestaurantRequests,
+    findRegisterRestaurantRequests
 };

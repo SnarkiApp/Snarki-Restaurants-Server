@@ -7,7 +7,8 @@ const {
     contactSnarki,
     postUploadUrl,
     getRestaurantsList,
-    registerRestaurants
+    registerRestaurants,
+    restaurantRequests
 } = require("./resolver");
 
 const resolvers = {
@@ -16,7 +17,8 @@ const resolvers = {
         login: (_, args, {res}) => loginUser(args, res),
         me: (_, args, {user}) => me(user),
         getRestaurants: (_, args, {user}) => getRestaurantsList(args, user),
-        postUploadUrl: (_, args, {user}) => postUploadUrl(args, user)
+        postUploadUrl: (_, args, {user}) => postUploadUrl(args, user),
+        restaurantRequests: (_, args, {user}) => restaurantRequests(args, user)
     },
     Mutation: {
         register: (_, args) => registerUser(args),
