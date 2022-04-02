@@ -35,7 +35,7 @@ const registerUser = async data => {
     }
 
     const emailValidation = constants.emailRegex.test(email);
-    const passwordValidation = constants.passwordRegex.test(password);
+    const passwordValidation = password.length >= 10;
     if (!emailValidation || !passwordValidation) {
         return {
             code: 400,
@@ -90,7 +90,7 @@ const loginUser = async (data) => {
     }
 
     const emailValidation = constants.emailRegex.test(email);
-    const passwordValidation = constants.passwordRegex.test(password);
+    const passwordValidation = password.length >= 10;
     if (!emailValidation || !passwordValidation) {
         return {
             code: 400,
