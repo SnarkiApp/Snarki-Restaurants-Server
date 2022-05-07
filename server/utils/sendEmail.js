@@ -6,6 +6,7 @@ const { fetchSSMSecrets } = require('./aws/ssmSecrets');
 const sendEmail = async ({
     to = "",
     templateId = "",
+    setReplyTo = "",
     args = {}
 }) => {
 
@@ -23,6 +24,9 @@ const sendEmail = async ({
             from: {
                 email: constants.sendgrid_from_email,
                 name: "Snarki"
+            },
+            replyTo: {
+                email: setReplyTo ? setReplyTo : constants.sendgrid_from_email
             },
             dynamicTemplateData: {...args}
         });

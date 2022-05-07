@@ -174,6 +174,7 @@ const contactSnarki = async (data) => {
         await sendEmail({
             to: constants.sendgrid_contact_to_email,
             templateId: constants.sendgrid_contact_template_id,
+            setReplyTo: email,
             args: {
                 email,
                 firstName,
