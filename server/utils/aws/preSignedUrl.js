@@ -7,12 +7,6 @@ let s3 = new AWS.S3({
     signatureVersion: 'v4'
 });
 
-// let getPresignedUrl = s3.getSignedUrl('getObject', {
-//     Bucket: process.env.S3_BUCKET,
-//     Key: 'image.jpg', //filename
-//     Expires: 100 //time to expire in seconds
-// });
-
 const putPresignedUrl = async ({category = "newRestaurants"}) => {
     let conditionMatch = "eq";
     let defaultType = "application/pdf";

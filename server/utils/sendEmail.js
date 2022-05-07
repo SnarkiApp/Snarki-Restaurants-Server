@@ -5,24 +5,25 @@ const { fetchSSMSecrets } = require('./aws/ssmSecrets');
 
 const sendEmail = async ({
     to = "",
+    templateId = "",
     args = {}
 }) => {
 
-    if (!to) throw new Error("Missing Email Arguments");
+    if (!to || !templateId) throw new Error("Missing Required Arguments");
     
     const apiKey = await fetchSSMSecrets(ssmKeys.sendGridApiKey);
     client.setApiKey(apiKey);
 
     try {
         await client.send({
+            templateId,
             to: {
                 email: to
             },
             from: {
                 email: constants.sendgrid_from_email,
-                name: "SnarkiTech"
+                name: "Snarki"
             },
-            templateId: constants.sendgrid_contact_template_id,
             dynamicTemplateData: {...args}
         });
     } catch(err) {

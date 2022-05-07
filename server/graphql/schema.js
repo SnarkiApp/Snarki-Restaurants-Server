@@ -126,6 +126,10 @@ const typeDefs = gql`
         ): PostUploadUrlType
 
         restaurantRequests: RestaurantRequestsType
+
+        sendPasswordResetLink(
+            email: String!
+        ): Status
     }
 
     type Mutation {

@@ -171,6 +171,7 @@ const contactSnarki = async (data) => {
     try {
         await sendEmail({
             to: constants.sendgrid_contact_to_email,
+            templateId: constants.sendgrid_contact_template_id,
             args: {
                 email,
                 firstName,
@@ -470,6 +471,75 @@ const restaurantRequests = async (args, user) => {
     }
 };
 
+const passwordResetLink = async (data, user) => {
+    const {email} = data;
+
+    if (!email) {
+        return {
+            code: 400,
+            message: "Please enter your email"
+        }
+    }
+
+    if (user) {
+        return {
+            code: 400,
+            message: "User already logged in"
+        }
+    }
+
+    const emailValidation = constants.emailRegex.test(email);
+    if (!emailValidation) {
+        return {
+            code: 400,
+            message: "Validation Failed"
+        };
+    }
+
+    let userDetails;
+    try {
+        userDetails = await findUser({email});
+        if (!userDetails) {
+            return {
+                code: 409,
+                message: "No User registered with this email"
+            };
+        }
+    } catch(err) {
+        return {
+            code: 500,
+            message: "Something went wrong!",
+        };
+    }
+
+    const resetPasswordToken = jwt.sign({
+        data: {
+            email,
+            userId: userDetails._id,
+        }
+    }, constants.TOKEN_SECRET, { expiresIn: 60*30 });
+
+    try {
+        await sendEmail({
+            to: email,
+            templateId: constants.sendgrid_reset_password_template_id,
+            args: {
+                url: `https://snarkiapp.com/postforgotpassword/${resetPasswordToken}`
+            }
+        });
+
+        return {
+            code: 200,
+            message: "Reset Password Email sent",
+        };
+    } catch(err) {
+        return {
+            code: 500,
+            message: "Something went wrong!",
+        };
+    }
+};
+
 module.exports = {
     me,
     loginUser,
@@ -480,5 +550,6 @@ module.exports = {
     putPresignedUrl,
     getRestaurantsList,
     registerRestaurants,
-    restaurantRequests
+    restaurantRequests,
+    passwordResetLink
 }
