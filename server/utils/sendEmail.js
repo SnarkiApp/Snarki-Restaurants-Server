@@ -3,7 +3,6 @@ const constants = require("../utils/constants");
 const ssmKeys = require('./aws/ssmKeys');
 const { fetchSSMSecrets } = require('./aws/ssmSecrets');
 
-
 const sendEmail = async ({
     to = "",
     args = {}
