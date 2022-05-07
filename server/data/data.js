@@ -9,6 +9,15 @@ const addUser = async args => {
     await getDb().collection("users").insertOne({...args});
 }
 
+const updateUser = async ({matchArgs, updatedData}) => {
+    await getDb().collection("users")
+        .updateOne({...matchArgs}, {
+            "$set": {
+                ...updatedData
+            }
+        });
+}
+
 const getRestaurants = async ({searchText}) => {
     return await getDb().collection("restaurants")
         .aggregate([
@@ -80,6 +89,7 @@ const findRegisterRestaurantRequests = async ({userId}) => {
 module.exports = {
     addUser,
     findUser,
+    updateUser,
     getRestaurants,
     findRestaurant,
     findVerificationRecords,

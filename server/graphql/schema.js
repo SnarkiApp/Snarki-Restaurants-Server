@@ -147,6 +147,11 @@ const typeDefs = gql`
         registerRestaurants(
             input: RestaurantInput!
         ): RegisterRestaurantsStatus
+
+        resetPassword(
+            token: String!
+            password: String!
+        ): Status
     }
 `;
 

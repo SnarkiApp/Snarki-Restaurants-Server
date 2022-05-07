@@ -9,7 +9,8 @@ const {
     getRestaurantsList,
     registerRestaurants,
     restaurantRequests,
-    passwordResetLink
+    passwordResetLink,
+    resetUserPassword
 } = require("./resolver");
 
 const resolvers = {
@@ -25,7 +26,8 @@ const resolvers = {
     Mutation: {
         register: (_, args) => registerUser(args),
         addClaimDocuments: (_, args, {user}) => addClaimDocuments(args, user),
-        registerRestaurants: (_, args, {user}) => registerRestaurants(args, user)
+        registerRestaurants: (_, args, {user}) => registerRestaurants(args, user),
+        resetPassword: (_, args, {user}) => resetUserPassword(args, user)
     }
 };
 

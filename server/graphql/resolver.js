@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const {
     findUser,
     addUser,
+    updateUser,
     getRestaurants,
     findRestaurant,
     findVerificationRecords,
@@ -16,6 +17,7 @@ const {hashPassword, comparePassword} = require("../utils/bcrypt");
 const constants = require("../utils/constants");
 const { sendEmail } = require("../utils/sendEmail");
 const { putPresignedUrl } = require("../utils/aws/preSignedUrl");
+const { update } = require("lodash");
 
 const registerUser = async data => {
     const {email, password, role} = data;
@@ -540,6 +542,97 @@ const passwordResetLink = async (data, user) => {
     }
 };
 
+const resetUserPassword = async (data, user) => {
+    const {token, password} = data;
+
+    if (!token) {
+        return {
+            code: 400,
+            message: "This Page has Expired. Please try again."
+        }
+    }
+
+    if (!password) {
+        return {
+            code: 400,
+            message: "Password cannot be empty"
+        }
+    }
+
+    if (user) {
+        return {
+            code: 400,
+            message: "User already logged in"
+        }
+    }
+
+    if (password.length < 10) {
+        return {
+            code: 400,
+            message: "Validation Failed"
+        };
+    }
+
+    let tokenData;
+    try {
+        const { data } = await jwt.verify(token, constants.TOKEN_SECRET);
+        tokenData = data;
+
+        if (!tokenData.userId || !tokenData.email) {
+            throw new Error();
+        }
+    } catch(err) {
+        return {
+            code: 500,
+            message: "This Page has Expired. Please try again.",
+        };
+    }
+
+    let userDetails;
+    try {
+        userDetails = await findUser({email: tokenData.email});
+        if (!userDetails) {
+            return {
+                code: 409,
+                message: "User not found. Please try again"
+            };
+        }
+    } catch(err) {
+        return {
+            code: 500,
+            message: "Something went wrong!",
+        };
+    }
+
+    let securePassword;
+    try {
+        securePassword = await hashPassword(password);
+    } catch(err) {
+        throw new Error(err);
+    }
+
+    try {
+        await updateUser({
+            matchArgs: {
+                _id: ObjectId(tokenData.userId)
+            },
+            updatedData: {
+                password: securePassword
+            }
+        });
+
+        return {
+            code: 200,
+            message: "Password Updated Successfully",
+        };
+    } catch(err) {
+        return {
+            code: 500,
+            message: "Something went wrong!",
+        };
+    }
+};
+
 module.exports = {
     me,
     loginUser,
@@ -551,5 +644,6 @@ module.exports = {
     getRestaurantsList,
     registerRestaurants,
     restaurantRequests,
-    passwordResetLink
+    passwordResetLink,
+    resetUserPassword
 }
