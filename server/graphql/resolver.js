@@ -549,7 +549,7 @@ const resetUserPassword = async (data, user) => {
     if (!token) {
         return {
             code: 400,
-            message: "This Page has Expired. Please try again."
+            message: "This Link has Expired. Please try again."
         }
     }
 
@@ -585,7 +585,7 @@ const resetUserPassword = async (data, user) => {
     } catch(err) {
         return {
             code: 500,
-            message: "This Page has Expired. Please try again.",
+            message: "This Link has Expired. Please try again.",
         };
     }
 
