@@ -34,9 +34,26 @@ const getRestaurants = async ({searchText}) => {
         .toArray();
 }
 
-const findVerificationRecords = async (filters) => {
-    return await getDb().collection("claim_restaurant_verification")
-        .findOne(filters);
+const validateClaimRequest = async ({
+    status,
+    userId,
+    claimed,
+    restaurantId
+}) => {
+    return await Promise.all([
+        getDb().collection("claim_restaurant_verification")
+            .findOne({
+                restaurantId,
+                userId,
+                status: {
+                    $in: status
+                },
+            }),
+        getDb().collection("restaurants").findOne({
+            _id: ObjectId(restaurantId),
+            claimed
+        })
+    ]);
 }
 
 const addDocumentsVerification = async (filters) => {
@@ -55,7 +72,7 @@ const addRestaurantDocuments = async ({restaurantId, documents}) => {
         });
 }
 
-const findRestaurant = async (filters) => {
+const findRegisteredRestaurant = async (filters) => {
     return await getDb().collection("register_restaurant_verification")
         .findOne(filters);
 }
@@ -86,13 +103,14 @@ const findRegisterRestaurantRequests = async ({userId}) => {
         .toArray();
 }
 
+
 module.exports = {
     addUser,
     findUser,
     updateUser,
     getRestaurants,
-    findRestaurant,
-    findVerificationRecords,
+    findRegisteredRestaurant,
+    validateClaimRequest,
     addRestaurantDocuments,
     addDocumentsVerification,
     registerRestaurantVerification,

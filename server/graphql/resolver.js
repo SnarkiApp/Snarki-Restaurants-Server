@@ -6,8 +6,8 @@ const {
     addUser,
     updateUser,
     getRestaurants,
-    findRestaurant,
-    findVerificationRecords,
+    findRegisteredRestaurant,
+    validateClaimRequest,
     addDocumentsVerification,
     findClaimRestaurantRequests,
     registerRestaurantVerification,
@@ -266,23 +266,49 @@ const postUploadUrl = async (args, user) => {
     if (!args.count) {
         return {
             code: 400,
-            message: "missing arguments"
+            message: "Url count missing"
         }
     }
 
-    if (args._id && args.category === "claim") {
-        try {
-            const documents = await findVerificationRecords({
-                restaurantId: ObjectId(args._id),
-                userId: ObjectId(user.userId)
-            });
+    if (args.category === "claim") {
 
-            if(documents) {
-                return {
-                    code: 409,
-                    message: "Records verification in progress",
-                };
+        if (!args._id) {
+            return {
+                code: 400,
+                message: "Restaurant Id missing"
             }
+        }
+
+        try {
+            const restaurantStatus = await validateClaimRequest({
+                restaurantId: ObjectId(args._id),
+                userId: ObjectId(user.userId),
+                status: ["unclaimed", "approved"],
+                claimed: true
+            });
+            
+            for(let i=0; i<restaurantStatus.length; i++) {
+
+                if(restaurantStatus[i] != null) {
+
+                    if (
+                        "claimed" in restaurantStatus[i] && restaurantStatus[i].claimed == true ||
+                        "status" in restaurantStatus[i] && restaurantStatus[i].status == "approved"
+                    ) {
+                        return {
+                            code: 409,
+                            message: "Restaurant already claimed",
+                        };
+                    } else {
+                        return {
+                            code: 409,
+                            message: "Records verification in progress",
+                        };
+                    }
+
+                }
+
+            };
         } catch(err) {
             throw new Error(err);
         }
@@ -328,17 +354,35 @@ const addClaimDocuments = async (args, user) => {
     }
 
     try {
-        const documents = await findVerificationRecords({
+        const restaurantStatus = await validateClaimRequest({
             restaurantId: ObjectId(args._id),
-            userId: ObjectId(user.userId)
+            userId: ObjectId(user.userId),
+            status: ["unclaimed", "approved"],
+            claimed: true
         });
+        
+        for(let i=0; i<restaurantStatus.length; i++) {
 
-        if(documents) {
-            return {
-                code: 409,
-                message: "Records verification in progress",
-            };
-        }
+            if(restaurantStatus[i] != null) {
+
+                if (
+                    "claimed" in restaurantStatus[i] && restaurantStatus[i].claimed == true ||
+                    "status" in restaurantStatus[i] && restaurantStatus[i].status == "approved"
+                ) {
+                    return {
+                        code: 409,
+                        message: "Restaurant already claimed",
+                    };
+                } else {
+                    return {
+                        code: 409,
+                        message: "Records verification in progress",
+                    };
+                }
+
+            }
+
+        };
     } catch(err) {
         throw new Error(err);
     }
@@ -373,7 +417,7 @@ const registerRestaurants = async (args, user) => {
     const input = args.input;
 
     try {
-        const documents = await findRestaurant({
+        const documents = await findRegisteredRestaurant({
             name: input.name.toLowerCase(),
             postalCode: input.postalCode,
             userId: ObjectId(user.userId)
