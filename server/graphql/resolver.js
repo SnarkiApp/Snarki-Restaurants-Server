@@ -239,9 +239,22 @@ const getRestaurantsList = async (args, user) => {
         const restaurants = await getRestaurants({
             searchText: args.name.toLowerCase()
         });
+
+        const formattedRestaurants = restaurants.map((restaurant) => ({
+            _id: restaurant._id,
+            name: restaurant.name,
+            address: restaurant.address,
+            city: restaurant.city,
+            state: restaurant.state,
+            postalCode: restaurant.postalCode,
+            contact: restaurant.contact,
+            hours: restaurant.hours,
+            cuisines: restaurant.cuisines,
+            location: restaurant.location
+        }));
         return {
             code: 200,
-            restaurants,
+            restaurants: formattedRestaurants,
             message: "Restaurants fetched successfully",
         };
 
@@ -282,18 +295,17 @@ const postUploadUrl = async (args, user) => {
             const restaurantStatus = await validateClaimRequest({
                 restaurantId: ObjectId(args._id),
                 userId: ObjectId(user.userId),
-                status: ["unclaimed", "approved"],
-                claimed: true
+                restaurantStatus: [
+                    types["Status"]["UNCLAIMED"],
+                    types["Status"]["APPROVED"]
+                ]
             });
             
             for(let i=0; i<restaurantStatus.length; i++) {
 
                 if(restaurantStatus[i] != null) {
 
-                    if (
-                        "claimed" in restaurantStatus[i] && restaurantStatus[i].claimed == true ||
-                        "status" in restaurantStatus[i] && restaurantStatus[i].status == "approved"
-                    ) {
+                    if (restaurantStatus[i].status == "approved") {
                         return {
                             code: 409,
                             message: "Restaurant already claimed",
@@ -345,7 +357,7 @@ const addClaimDocuments = async (args, user) => {
         }
     }
 
-    if (!args._id || !args.documents.length) {
+    if (!args._id || !args.ein || !args.documents.length) {
         return {
             code: 400,
             message: "missing arguments"
@@ -356,18 +368,17 @@ const addClaimDocuments = async (args, user) => {
         const restaurantStatus = await validateClaimRequest({
             restaurantId: ObjectId(args._id),
             userId: ObjectId(user.userId),
-            status: ["unclaimed", "approved"],
-            claimed: true
+            restaurantStatus: [
+                types["Status"]["UNCLAIMED"],
+                types["Status"]["APPROVED"]
+            ]
         });
-        
+
         for(let i=0; i<restaurantStatus.length; i++) {
 
             if(restaurantStatus[i] != null) {
 
-                if (
-                    "claimed" in restaurantStatus[i] && restaurantStatus[i].claimed == true ||
-                    "status" in restaurantStatus[i] && restaurantStatus[i].status == "approved"
-                ) {
+                if (restaurantStatus[i].status == types["Status"]["APPROVED"]) {
                     return {
                         code: 409,
                         message: "Restaurant already claimed",
@@ -391,7 +402,8 @@ const addClaimDocuments = async (args, user) => {
             userId: ObjectId(user.userId),
             restaurantId: ObjectId(args._id),
             documents: args.documents,
-            status: "unclaimed"
+            ein: args.ein,
+            status: types["Status"]["UNCLAIMED"]
         });
         return {
             code: 200,

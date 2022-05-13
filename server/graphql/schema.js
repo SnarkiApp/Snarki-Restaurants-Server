@@ -132,6 +132,7 @@ const typeDefs = gql`
 
         addClaimDocuments(
             _id: String!
+            ein: String!
             documents: [String!]!
         ): Status
 

@@ -1,5 +1,6 @@
 const {ObjectId} = require('mongodb');
 const {getDb} = require("../utils/mongo");
+const types = require("../utils/types");
 
 const findUser = async (args) => {
     return await getDb().collection("users").findOne({...args});
@@ -32,28 +33,6 @@ const getRestaurants = async ({searchText}) => {
             { $match : { claimed : false } },
         ]).sort({score: {$meta: 'textScore'}})
         .toArray();
-}
-
-const validateClaimRequest = async ({
-    status,
-    userId,
-    claimed,
-    restaurantId
-}) => {
-    return await Promise.all([
-        getDb().collection("claim_restaurant_verification")
-            .findOne({
-                restaurantId,
-                userId,
-                status: {
-                    $in: status
-                },
-            }),
-        getDb().collection("restaurants").findOne({
-            _id: ObjectId(restaurantId),
-            claimed
-        })
-    ]);
 }
 
 const addDocumentsVerification = async (filters) => {
@@ -103,6 +82,14 @@ const findRegisterRestaurantRequests = async ({userId}) => {
         .toArray();
 }
 
+const validateClaimRequest = async ({restaurantStatus = [types["Status"]["UNCLAIMED"]], ...rest}) => {
+    return await getDb().collection("claim_restaurant_verification")
+        .find({
+            status: { $in: restaurantStatus },
+            ...rest
+        })
+        .toArray();
+}
 
 module.exports = {
     addUser,
