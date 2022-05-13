@@ -59,19 +59,9 @@ const typeDefs = gql`
         urls: [String!]
     }
 
-    type RegisterRestaurantsStatus {
-        code: Int!
-        message: String!
-        _id: ID
-    }
-
-    input LocationInput {
-        type: String,
-        coordinates: [Float!]!
-    }
-
     input RestaurantInput {
         name: String!
+        ein: String!
         address: String!
         city: String!
         state: String!
@@ -79,7 +69,8 @@ const typeDefs = gql`
         contact: String!
         hours: String!
         cuisines: String!
-        location: LocationInput!
+        longitude: Float!
+        latitude: Float!
         documents: [String!]!
         images: [String!]!
     }
@@ -146,7 +137,7 @@ const typeDefs = gql`
 
         registerRestaurants(
             input: RestaurantInput!
-        ): RegisterRestaurantsStatus
+        ): Status
 
         resetPassword(
             token: String!

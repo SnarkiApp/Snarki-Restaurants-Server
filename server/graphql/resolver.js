@@ -6,7 +6,6 @@ const {
     addUser,
     updateUser,
     getRestaurants,
-    findRegisteredRestaurant,
     validateClaimRequest,
     addDocumentsVerification,
     findClaimRestaurantRequests,
@@ -17,7 +16,7 @@ const {hashPassword, comparePassword} = require("../utils/bcrypt");
 const constants = require("../utils/constants");
 const { sendEmail } = require("../utils/sendEmail");
 const { putPresignedUrl } = require("../utils/aws/preSignedUrl");
-const { update } = require("lodash");
+const types = require("../utils/types");
 
 const registerUser = async data => {
     const {email, password, role} = data;
@@ -416,40 +415,56 @@ const registerRestaurants = async (args, user) => {
 
     const input = args.input;
 
-    try {
-        const documents = await findRegisteredRestaurant({
-            name: input.name.toLowerCase(),
-            postalCode: input.postalCode,
-            userId: ObjectId(user.userId)
-        });
+    // try {
+    //     /*
+    //         Block registration if restaurant
+    //         with same name and postalcode
+    //         by same user.
+    //     */
+    //     const documents = await findRegisteredRestaurant({
+    //         name: input.name.toLowerCase(),
+    //         postalCode: input.postalCode,
+    //         userId: ObjectId(user.userId)
+    //     });
 
-        if(documents) {
-            return {
-                code: 409,
-                message: "Restaurant already registered.",
-            };
-        }
-    } catch(err) {
-        throw new Error(err);
-    }
+    //     if(documents) {
+    //         return {
+    //             code: 409,
+    //             message: "Restaurant already registered.",
+    //         };
+    //     }
+    // } catch(err) {
+    //     throw new Error(err);
+    // }
 
     try {
-        const response = await registerRestaurantVerification({
-            ...input,
-            status: "unregistered",
+        await registerRestaurantVerification({
+            status: types["Status"]["UNREGISTERED"],
             userId: ObjectId(user.userId),
-            name: input.name.toLowerCase(),
-            state: input.state.toLowerCase(),
-            address: input.address.toLowerCase(),
-            city: input.city.toLowerCase(),
+            ein: input.ein.trim().toLowerCase(),
+            name: input.name.trim().toLowerCase(),
+            state: input.state.trim().toLowerCase(),
+            address: input.address.trim().toLowerCase(),
+            city: input.city.trim().toLowerCase(),
+            contact: input.contact.trim(),
+            postalCode: input.postalCode.trim(),
+            hours: input.hours.trim().toLowerCase(),
+            location: {
+                type: "Point",
+                coordinates: [
+                    input.longitude,
+                    input.latitude
+                ]
+            },
+            documents: input.documents,
+            images: input.images,
             cuisines: input.cuisines.split(",")
                 .filter((cuisine) => cuisine.trim().length > 0)
                 .map((cuisine) => cuisine.trim())
         });
         return {
             code: 200,
-            _id: response.insertedId.toString(),
-            message: "Restaurants details recorded",
+            message: "Request registered successfully",
         };
 
     } catch(err) {
