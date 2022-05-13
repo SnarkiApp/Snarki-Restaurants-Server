@@ -1,4 +1,6 @@
 const Status = {
+    "APPROVED": "approved",
+    "UNCLAIMED": "unclaimed",
     "UNREGISTERED": "unregistered",
 };
 
