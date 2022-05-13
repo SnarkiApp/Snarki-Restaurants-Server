@@ -376,20 +376,16 @@ const addClaimDocuments = async (args, user) => {
 
         for(let i=0; i<restaurantStatus.length; i++) {
 
-            if(restaurantStatus[i] != null) {
-
-                if (restaurantStatus[i].status == types["Status"]["APPROVED"]) {
-                    return {
-                        code: 409,
-                        message: "Restaurant already claimed",
-                    };
-                } else {
-                    return {
-                        code: 409,
-                        message: "Records verification in progress",
-                    };
-                }
-
+            if (restaurantStatus[i].status == types["Status"]["APPROVED"]) {
+                return {
+                    code: 409,
+                    message: "Restaurant already claimed. Please contact support.",
+                };
+            } else {
+                return {
+                    code: 409,
+                    message: "Records verification in progress",
+                };
             }
 
         };
