@@ -6,7 +6,6 @@ const {
     addUser,
     updateUser,
     getRestaurants,
-    findRegisteredRestaurant,
     validateClaimRequest,
     addDocumentsVerification,
     findClaimRestaurantRequests,
@@ -17,7 +16,7 @@ const {hashPassword, comparePassword} = require("../utils/bcrypt");
 const constants = require("../utils/constants");
 const { sendEmail } = require("../utils/sendEmail");
 const { putPresignedUrl } = require("../utils/aws/preSignedUrl");
-const { update } = require("lodash");
+const types = require("../utils/types");
 
 const registerUser = async data => {
     const {email, password, role} = data;
@@ -240,9 +239,22 @@ const getRestaurantsList = async (args, user) => {
         const restaurants = await getRestaurants({
             searchText: args.name.toLowerCase()
         });
+
+        const formattedRestaurants = restaurants.map((restaurant) => ({
+            _id: restaurant._id,
+            name: restaurant.name,
+            address: restaurant.address,
+            city: restaurant.city,
+            state: restaurant.state,
+            postalCode: restaurant.postalCode,
+            contact: restaurant.contact,
+            hours: restaurant.hours,
+            cuisines: restaurant.cuisines,
+            location: restaurant.location
+        }));
         return {
             code: 200,
-            restaurants,
+            restaurants: formattedRestaurants,
             message: "Restaurants fetched successfully",
         };
 
@@ -283,18 +295,17 @@ const postUploadUrl = async (args, user) => {
             const restaurantStatus = await validateClaimRequest({
                 restaurantId: ObjectId(args._id),
                 userId: ObjectId(user.userId),
-                status: ["unclaimed", "approved"],
-                claimed: true
+                restaurantStatus: [
+                    types["Status"]["UNCLAIMED"],
+                    types["Status"]["APPROVED"]
+                ]
             });
             
             for(let i=0; i<restaurantStatus.length; i++) {
 
                 if(restaurantStatus[i] != null) {
 
-                    if (
-                        "claimed" in restaurantStatus[i] && restaurantStatus[i].claimed == true ||
-                        "status" in restaurantStatus[i] && restaurantStatus[i].status == "approved"
-                    ) {
+                    if (restaurantStatus[i].status == "approved") {
                         return {
                             code: 409,
                             message: "Restaurant already claimed",
@@ -346,7 +357,7 @@ const addClaimDocuments = async (args, user) => {
         }
     }
 
-    if (!args._id || !args.documents.length) {
+    if (!args._id || !args.ein || !args.documents.length) {
         return {
             code: 400,
             message: "missing arguments"
@@ -357,29 +368,24 @@ const addClaimDocuments = async (args, user) => {
         const restaurantStatus = await validateClaimRequest({
             restaurantId: ObjectId(args._id),
             userId: ObjectId(user.userId),
-            status: ["unclaimed", "approved"],
-            claimed: true
+            restaurantStatus: [
+                types["Status"]["UNCLAIMED"],
+                types["Status"]["APPROVED"]
+            ]
         });
-        
+
         for(let i=0; i<restaurantStatus.length; i++) {
 
-            if(restaurantStatus[i] != null) {
-
-                if (
-                    "claimed" in restaurantStatus[i] && restaurantStatus[i].claimed == true ||
-                    "status" in restaurantStatus[i] && restaurantStatus[i].status == "approved"
-                ) {
-                    return {
-                        code: 409,
-                        message: "Restaurant already claimed",
-                    };
-                } else {
-                    return {
-                        code: 409,
-                        message: "Records verification in progress",
-                    };
-                }
-
+            if (restaurantStatus[i].status == types["Status"]["APPROVED"]) {
+                return {
+                    code: 409,
+                    message: "Restaurant already claimed. Please contact support.",
+                };
+            } else {
+                return {
+                    code: 409,
+                    message: "Records verification in progress",
+                };
             }
 
         };
@@ -392,7 +398,8 @@ const addClaimDocuments = async (args, user) => {
             userId: ObjectId(user.userId),
             restaurantId: ObjectId(args._id),
             documents: args.documents,
-            status: "unclaimed"
+            ein: args.ein,
+            status: types["Status"]["UNCLAIMED"]
         });
         return {
             code: 200,
@@ -416,40 +423,56 @@ const registerRestaurants = async (args, user) => {
 
     const input = args.input;
 
-    try {
-        const documents = await findRegisteredRestaurant({
-            name: input.name.toLowerCase(),
-            postalCode: input.postalCode,
-            userId: ObjectId(user.userId)
-        });
+    // try {
+    //     /*
+    //         Block registration if restaurant
+    //         with same name and postalcode
+    //         by same user.
+    //     */
+    //     const documents = await findRegisteredRestaurant({
+    //         name: input.name.toLowerCase(),
+    //         postalCode: input.postalCode,
+    //         userId: ObjectId(user.userId)
+    //     });
 
-        if(documents) {
-            return {
-                code: 409,
-                message: "Restaurant already registered.",
-            };
-        }
-    } catch(err) {
-        throw new Error(err);
-    }
+    //     if(documents) {
+    //         return {
+    //             code: 409,
+    //             message: "Restaurant already registered.",
+    //         };
+    //     }
+    // } catch(err) {
+    //     throw new Error(err);
+    // }
 
     try {
-        const response = await registerRestaurantVerification({
-            ...input,
-            status: "unregistered",
+        await registerRestaurantVerification({
+            status: types["Status"]["UNREGISTERED"],
             userId: ObjectId(user.userId),
-            name: input.name.toLowerCase(),
-            state: input.state.toLowerCase(),
-            address: input.address.toLowerCase(),
-            city: input.city.toLowerCase(),
+            ein: input.ein.trim().toLowerCase(),
+            name: input.name.trim().toLowerCase(),
+            state: input.state.trim().toLowerCase(),
+            address: input.address.trim().toLowerCase(),
+            city: input.city.trim().toLowerCase(),
+            contact: input.contact.trim(),
+            postalCode: input.postalCode.trim(),
+            hours: input.hours.trim().toLowerCase(),
+            location: {
+                type: "Point",
+                coordinates: [
+                    input.longitude,
+                    input.latitude
+                ]
+            },
+            documents: input.documents,
+            images: input.images,
             cuisines: input.cuisines.split(",")
                 .filter((cuisine) => cuisine.trim().length > 0)
                 .map((cuisine) => cuisine.trim())
         });
         return {
             code: 200,
-            _id: response.insertedId.toString(),
-            message: "Restaurants details recorded",
+            message: "Request registered successfully",
         };
 
     } catch(err) {
