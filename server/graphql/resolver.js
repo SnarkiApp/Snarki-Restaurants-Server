@@ -508,6 +508,7 @@ const restaurantRequests = async (args, user) => {
                 city: item.restaurant[0].city,
                 state: item.restaurant[0].state,
                 postalCode: item.restaurant[0].postalCode,
+                reason: item.restaurant[0].reason ?? ""
             }));
         }
 
@@ -520,6 +521,7 @@ const restaurantRequests = async (args, user) => {
                 city: item.city,
                 state: item.state,
                 postalCode: item.postalCode,
+                reason: item.reason ?? ""
             }));
         }
         requestsData = [

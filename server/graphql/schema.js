@@ -83,6 +83,7 @@ const typeDefs = gql`
         postalCode: String!
         status: String!
         type: String!
+        reason: String
     }
 
     type RestaurantRequestsType {
