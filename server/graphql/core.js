@@ -12,6 +12,10 @@ const {
     passwordResetLink,
     resetUserPassword
 } = require("./resolver");
+const {
+    createUserSubscription,
+    createPortalSession
+} = require("./Stripe/resolver");
 
 const resolvers = {
     Query: {
@@ -21,13 +25,15 @@ const resolvers = {
         getRestaurants: (_, args, {user}) => getRestaurantsList(args, user),
         postUploadUrl: (_, args, {user}) => postUploadUrl(args, user),
         restaurantRequests: (_, args, {user}) => restaurantRequests(args, user),
-        sendPasswordResetLink: (_, args, {user}) => passwordResetLink(args, user)
+        sendPasswordResetLink: (_, args, {user}) => passwordResetLink(args, user),
     },
     Mutation: {
         register: (_, args) => registerUser(args),
         addClaimDocuments: (_, args, {user}) => addClaimDocuments(args, user),
         registerRestaurants: (_, args, {user}) => registerRestaurants(args, user),
-        resetPassword: (_, args, {user}) => resetUserPassword(args, user)
+        resetPassword: (_, args, {user}) => resetUserPassword(args, user),
+        createSubscription: (_, args, {user}) => createUserSubscription(args, user),
+        createCustomerPortalSession: (_, args, {user}) => createPortalSession(user),
     }
 };
 

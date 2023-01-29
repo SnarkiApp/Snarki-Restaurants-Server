@@ -6,18 +6,29 @@ const {connectToMongoServer} = require('./utils/mongo');
 const cookieParser = require("cookie-parser");
 const bodyParser = require('body-parser');
 const constants = require("./utils/constants");
+const { stripeWebhookHandler } = require("./graphql/Stripe/webhook");
 
 const app = express();
 const corsOptions = {
-    origin: 'http://localhost:3000',
+    origin: '*',
     credentials: true
 }
-app.use(bodyParser.json());
-app.use(cookieParser());
+// app.use(bodyParser.json());
+// app.use(cookieParser());
 
-app.get("/", (req, res) => {
+app.get("/", () => {
     res.send("Snarki pong!!");
 });
+
+// Stripe Webhook Handler
+app.post(
+    '/webhook',
+    bodyParser.raw({ type: 'application/json' }),
+    async (req, res) => {
+        await stripeWebhookHandler(req, res);
+        res.sendStatus(200);
+    }
+);
 
 const startServer = async () => {
     const server = new ApolloServer({

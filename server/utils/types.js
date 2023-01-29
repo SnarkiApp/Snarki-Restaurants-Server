@@ -1,9 +1,15 @@
-const Status = {
+const STATUS = {
     "APPROVED": "approved",
     "UNCLAIMED": "unclaimed",
     "UNREGISTERED": "unregistered",
 };
 
+const STRIPE_STATUS = {
+    "PAID": "paid",
+    "CANCELLED": "cancelled"
+}
+
 module.exports = {
-    Status
+    STATUS,
+    STRIPE_STATUS
 };

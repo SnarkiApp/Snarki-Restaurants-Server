@@ -6,6 +6,7 @@ const {
     addUser,
     updateUser,
     getRestaurants,
+    updateRestaurant,
     validateClaimRequest,
     addDocumentsVerification,
     findClaimRestaurantRequests,
@@ -17,6 +18,7 @@ const constants = require("../utils/constants");
 const { sendEmail } = require("../utils/sendEmail");
 const { putPresignedUrl } = require("../utils/aws/preSignedUrl");
 const types = require("../utils/types");
+const { getCustomerRestaurantPayment } = require("./Stripe/resolver");
 
 const registerUser = async data => {
     const {email, password, role} = data;
@@ -24,15 +26,12 @@ const registerUser = async data => {
     if (!email || !password || !role) {
         return {
             code: 400,
-            message: "missing arguments"
+            message: "missing email or password"
         }
     }
 
     if (role != "RESTAURANT") {
-        return {
-            code: 401,
-            message: "Invalid Role"
-        };
+        throw new Error("registerUser: Invalid Role");
     }
 
     const emailValidation = constants.emailRegex.test(email);
@@ -86,7 +85,7 @@ const loginUser = async (data) => {
     if (!email || !password) {
         return {
             code: 400,
-            message: "missing arguments"
+            message: "missing email or password"
         }
     }
 
@@ -157,7 +156,7 @@ const contactSnarki = async (data) => {
     if (!email) {
         return {
             code: 400,
-            message: "missing arguments"
+            message: "missing email"
         }
     }
 
@@ -211,13 +210,26 @@ const me = async user => {
             };
         }
 
+        const paymentDetails = userDetails.stripe ?? null;
+        
         delete userDetails.password;
+        if (paymentDetails != null) {
+            delete userDetails.stripe;
+        }
 
-        return {
+        const response = {
             code: 200,
-            meData: {...userDetails},
+            meData: {
+                ...userDetails
+            },
             message: "User details fetched successfully",
         };
+
+        if (paymentDetails) {
+            response["meData"]["status"] = paymentDetails.status;
+        }
+
+        return response;
 
     } catch(err) {
         return {
@@ -276,19 +288,13 @@ const postUploadUrl = async (args, user) => {
     }
 
     if (!args.count) {
-        return {
-            code: 400,
-            message: "Url count missing"
-        }
+        throw new Error("postUploadUrl: Url Count arg missing");
     }
 
     if (args.category === "claim") {
 
         if (!args._id) {
-            return {
-                code: 400,
-                message: "Restaurant Id missing"
-            }
+            throw new Error("postUploadUrl: claim restaurant id missing");
         }
 
         try {
@@ -296,8 +302,8 @@ const postUploadUrl = async (args, user) => {
                 restaurantId: ObjectId(args._id),
                 userId: ObjectId(user.userId),
                 restaurantStatus: [
-                    types["Status"]["UNCLAIMED"],
-                    types["Status"]["APPROVED"]
+                    types["STATUS"]["UNCLAIMED"],
+                    types["STATUS"]["APPROVED"]
                 ]
             });
             
@@ -358,10 +364,7 @@ const addClaimDocuments = async (args, user) => {
     }
 
     if (!args._id || !args.ein || !args.documents.length) {
-        return {
-            code: 400,
-            message: "missing arguments"
-        }
+        throw new Error("addClaimDocuments: missing arguments");
     }
 
     try {
@@ -369,14 +372,14 @@ const addClaimDocuments = async (args, user) => {
             restaurantId: ObjectId(args._id),
             userId: ObjectId(user.userId),
             restaurantStatus: [
-                types["Status"]["UNCLAIMED"],
-                types["Status"]["APPROVED"]
+                types["STATUS"]["UNCLAIMED"],
+                types["STATUS"]["APPROVED"]
             ]
         });
 
         for(let i=0; i<restaurantStatus.length; i++) {
 
-            if (restaurantStatus[i].status == types["Status"]["APPROVED"]) {
+            if (restaurantStatus[i].status == types["STATUS"]["APPROVED"]) {
                 return {
                     code: 409,
                     message: "Restaurant already claimed. Please contact support.",
@@ -399,7 +402,7 @@ const addClaimDocuments = async (args, user) => {
             restaurantId: ObjectId(args._id),
             documents: args.documents,
             ein: args.ein,
-            status: types["Status"]["UNCLAIMED"]
+            status: types["STATUS"]["UNCLAIMED"]
         });
         return {
             code: 200,
@@ -447,7 +450,7 @@ const registerRestaurants = async (args, user) => {
 
     try {
         await registerRestaurantVerification({
-            status: types["Status"]["UNREGISTERED"],
+            status: types["STATUS"]["UNREGISTERED"],
             userId: ObjectId(user.userId),
             ein: input.ein.trim().toLowerCase(),
             name: input.name.trim().toLowerCase(),
@@ -491,43 +494,88 @@ const restaurantRequests = async (args, user) => {
         }
     }
 
+    let userRestaurantPaymentInfo = [];
+    const restaurantStripeMap = {};
+    const getBillingDetails = "billing" in args && args["billing"];
+
+    if (getBillingDetails) {
+        try {
+            userRestaurantPaymentInfo = await getCustomerRestaurantPayment({
+                userId: ObjectId(user.userId)
+            }, true);
+        } catch(err) {
+            throw new Error("restaurantRequests: Error while fetching customer restaurant payment details");
+        }
+
+        for(let i=0; i<userRestaurantPaymentInfo.length; i++) {
+            const restaurant = (userRestaurantPaymentInfo[i].restaurant).toString();
+            restaurantStripeMap[restaurant] = userRestaurantPaymentInfo[i];
+        }
+    }
+
     try {
-        const claimRestaurantRequests = await findClaimRestaurantRequests({userId: ObjectId(user.userId)});
-        const registerRestaurantRequests = await findRegisterRestaurantRequests({userId: ObjectId(user.userId)});
+        const requests = await Promise.all([
+            findClaimRestaurantRequests({userId: ObjectId(user.userId)}),
+            findRegisterRestaurantRequests({userId: ObjectId(user.userId)})
+        ]);
+
+        const claimRequests = requests.filter(obj => "claim" in obj)[0].claim;
+        const registerRequests = requests.filter(obj => "register" in obj)[0].register;
 
         let requestsData = [];
-        let claimData = [];
-        let registerData = [];
+        for(let i=0; i<claimRequests.length; i++) {
 
-        if (claimRestaurantRequests.length) {
-            claimData = claimRestaurantRequests.map((item) => ({
+            if (getBillingDetails && claimRequests[i].status != types["STATUS"]["APPROVED"]) continue;
+
+            requestsData.push({
                 type: "Claim",
-                status: item.status,
-                name: item.restaurant[0].name,
-                address: item.restaurant[0].address,
-                city: item.restaurant[0].city,
-                state: item.restaurant[0].state,
-                postalCode: item.restaurant[0].postalCode,
-                reason: item.restaurant[0].reason ?? ""
-            }));
+                status: claimRequests[i].status,
+                name: claimRequests[i].restaurant[0].name,
+                address: claimRequests[i].restaurant[0].address,
+                city: claimRequests[i].restaurant[0].city,
+                state: claimRequests[i].restaurant[0].state,
+                postalCode: claimRequests[i].restaurant[0].postalCode,
+                reason: claimRequests[i].restaurant[0].reason ?? "",
+                restaurantId: claimRequests[i].restaurantId,
+            });
+            
+            if (getBillingDetails) {
+                if (restaurantStripeMap[claimRequests[i]["restaurantId"]] && "restaurant" in restaurantStripeMap[claimRequests[i]["restaurantId"].toString()]) {
+                    const paymentDetails = restaurantStripeMap[claimRequests[i]["restaurantId"].toString()];
+                    requestsData[requestsData.length-1]["subscriptionStatus"] = paymentDetails["subscriptionStatus"];
+                    requestsData[requestsData.length-1]["subscriptionId"] = paymentDetails["subscription"];
+                    requestsData[requestsData.length-1]["endDate"] = paymentDetails["subscriptionStatus"] == "active" ? paymentDetails["endDate"] : null;
+                }
+            }
+
         }
 
-        if (registerRestaurantRequests.length) {
-            registerData = registerRestaurantRequests.map((item) => ({
+        for(let i=0; i<registerRequests.length; i++) {
+
+            if (getBillingDetails && registerRequests[i].status != types["STATUS"]["APPROVED"]) continue;
+
+            requestsData.push({
                 type: "Register",
-                status: item.status,
-                name: item.name,
-                address: item.address,
-                city: item.city,
-                state: item.state,
-                postalCode: item.postalCode,
-                reason: item.reason ?? ""
-            }));
+                status: registerRequests[i].status,
+                name: registerRequests[i].name,
+                address: registerRequests[i].address,
+                city: registerRequests[i].city,
+                state: registerRequests[i].state,
+                postalCode: registerRequests[i].postalCode,
+                reason: registerRequests[i].reason ?? "",
+                restaurantId: registerRequests[i].restaurantId
+            });
+            
+            if (getBillingDetails) {
+                if (restaurantStripeMap[registerRequests[i]["restaurantId"]] && "restaurant" in restaurantStripeMap[registerRequests[i]["restaurantId"].toString()]) {
+                    const paymentDetails = restaurantStripeMap[registerRequests[i]["restaurantId"].toString()];
+                    requestsData[requestsData.length-1]["subscriptionStatus"] = paymentDetails["subscriptionStatus"];
+                    requestsData[requestsData.length-1]["subscriptionId"] = paymentDetails["subscription"];
+                    requestsData[requestsData.length-1]["endDate"] = paymentDetails["subscriptionStatus"] == "active" ? paymentDetails["endDate"] : null;
+                }
+            }
+
         }
-        requestsData = [
-            ...claimData,
-            ...registerData
-        ];
 
         return {
             code: 200,
@@ -703,10 +751,38 @@ const resetUserPassword = async (data, user) => {
     }
 };
 
+const updateUserData = async ({ matchArgs, updatedData }) => {
+
+    try {
+        await updateUser({
+            matchArgs,
+            updatedData
+        });
+    } catch (err) {
+        throw new Error("Error while fetching user Data");
+    }
+
+}
+
+const updateRestaurantData = async ({ matchArgs, updatedData }) => {
+
+    try {
+        await updateRestaurant({
+            matchArgs,
+            updatedData
+        });
+    } catch (err) {
+        throw new Error("Error while updating restaurant data");
+    }
+
+}
+
 module.exports = {
     me,
     loginUser,
     registerUser,
+    updateUserData,
+    updateRestaurantData,
     addClaimDocuments,
     contactSnarki,
     postUploadUrl,

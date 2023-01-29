@@ -21,6 +21,7 @@ const typeDefs = gql`
         email: String!
         verified: Boolean!
         role: String!
+        status: String
     }
 
     type UserData {
@@ -84,12 +85,44 @@ const typeDefs = gql`
         status: String!
         type: String!
         reason: String
+        subscriptionStatus: String
+        subscriptionId: String
+        restaurantId: String
+        endDate: String
     }
 
     type RestaurantRequestsType {
         code: Int!
         message: String!
         restaurants: [RestaurantRequest!]
+    }
+
+    type Subscription {
+        code: Int!
+        message: String!
+        subscriptionId: String
+        clientSecret: String
+    }
+
+    type BillingItemType {
+        name: String!
+        address: String!
+        city: String!
+        state: String!
+        postalCode: String!
+        paymentStatus: String
+    }
+
+    type BillingType {
+        code: Int!
+        message: String!
+        billing: [BillingItemType!]
+    }
+
+    type CreateSessionType {
+        code: Int!
+        message: String!
+        url: String
     }
 
     type Query {
@@ -117,11 +150,15 @@ const typeDefs = gql`
             category: String!
         ): PostUploadUrlType
 
-        restaurantRequests: RestaurantRequestsType
+        restaurantRequests(
+            billing: Boolean
+        ): RestaurantRequestsType
 
         sendPasswordResetLink(
             email: String!
         ): Status
+
+        getUserBilling: BillingType
     }
 
     type Mutation {
@@ -145,6 +182,13 @@ const typeDefs = gql`
             token: String!
             password: String!
         ): Status
+
+        createSubscription(
+            priceId: String!
+            restaurant: String!
+        ): Subscription
+
+        createCustomerPortalSession: CreateSessionType
     }
 `;
 
