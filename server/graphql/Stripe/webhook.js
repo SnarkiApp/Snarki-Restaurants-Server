@@ -13,7 +13,7 @@ const stripeWebhookHandler = async (req, res) => {
         event = stripe.webhooks.constructEvent(
             req.body,
             req.headers['stripe-signature'],
-            "whsec_uFaVel5HKViGjipVgiDwRobwV97YsI95"
+            ""
         );
     } catch (err) {
         console.log(err);
