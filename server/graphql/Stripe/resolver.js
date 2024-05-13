@@ -6,7 +6,7 @@ const {
 } = require("./data");
 const { STRIPE_STATUS } = require("../../utils/types");
 
-const stripe = require('stripe')('sk_test_51KuQTfEENlNwB06RNvE2rjh5aAioZmHbzLDSQLLakQv67b7pqTMoq1XtqWDueaDQdUaLtpo14sbR7pNVNA4W0hrJ00oWI3wyar');
+const stripe = require('stripe')('');
 
 const createCustomer = async ({email = ""}) => {
 
